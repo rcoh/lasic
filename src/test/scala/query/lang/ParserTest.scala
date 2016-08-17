@@ -55,6 +55,10 @@ class ParserTest extends WordSpec with Matchers {
       noParse("[a*x]").offset should be(3)
     }
 
+    "handle multi-character field names" in {
+      parse("[exposed]") should be (Query(Map("exposed" -> NoQuery), DefaultPaging))
+    }
+
   }
 
   def parse(s: String) = QueryParser.parse(s).right.get

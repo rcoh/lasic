@@ -35,6 +35,8 @@ object LoadableMacroImpl {
       }
     }
 
+    val loadableField = q"query.loaders.LoadableField"
+    val jValue = q"org.json4s.JsonAST.JValue"
     // Want to end up with:
     // Either[Iterable(String, LoadableField), JValue]
     val fields = validMembers.map { case (symbol, fieldMode) =>
@@ -52,20 +54,18 @@ object LoadableMacroImpl {
           throw new RuntimeException(s"$symbol was not a supported type for loading")
         }
 
-        if (term.typeSignature <:< typeOf[Iterable[_]]) {
-          q"""${accessor.name.toString} -> LoadableField($fieldMode, () => Right(a.$accessor.map(loadable => Loadable.toConcreteLoadable(loadable))))"""
+        if (accessor.typeSignature.resultType <:< typeOf[Iterable[Any]]) {
+          q"""${accessor.name.toString} -> $loadableField($fieldMode, () => Right(a.$accessor.map(loadable => Loadable.toConcreteLoadable(loadable))))"""
         } else {
-          q"""${accessor.name.toString} -> LoadableField($fieldMode, () => Left(Loadable.toConcreteLoadable(a.$accessor)))"""
+          q"""${accessor.name.toString} -> $loadableField($fieldMode, () => Left(Loadable.toConcreteLoadable(a.$accessor)))"""
         }
     }.toList
 
-    val imports = q"import org.json4s.JsonAST.JValue"
     val fieldList = q"""Map($fields: _*)"""
     c.Expr[Loadable[A]](
       q"""
-        $imports
         new Loadable[$aSymbol] {
-          def load(a: $aSymbol): Either[Map[String, LoadableField], JValue] = Left($fieldList)
+          def load(a: $aSymbol): Either[Map[String, query.loaders.LoadableField], org.json4s.JsonAST.JValue] = Left($fieldList)
       }
       """)
   }
