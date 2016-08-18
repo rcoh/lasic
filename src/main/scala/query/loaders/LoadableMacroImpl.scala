@@ -24,10 +24,15 @@ object LoadableMacroImpl {
       case ExposeAlways => q"_root_.query.loaders.ExposeAlways"
     }
 
-    val instanceType = atag.tpe
+    val instanceType = weakTypeOf[A]
     val aSymbol = atag.tpe.typeSymbol
+    val caseClassAnnotations: Map[String, List[Annotation]] = if (aSymbol.isClass && aSymbol.asClass.isCaseClass) {
+      val constructorSymbols = aSymbol.asClass.primaryConstructor.typeSignature.paramLists.head
+      constructorSymbols.map(s => s.name.toString -> s.annotations).toMap
+    } else { Map() }
     val validMembers = instanceType.members.flatMap { member =>
-      val fieldModes = member.annotations.flatMap(annotationMapper(c)(_))
+      val annotationsFromCase = caseClassAnnotations.getOrElse(member.name.toString, List())
+      val fieldModes = (member.annotations ++ annotationsFromCase).flatMap(annotationMapper(c)(_))
       fieldModes match {
         case mode :: Nil => Some(member -> mode)
         case Nil => None
@@ -35,8 +40,8 @@ object LoadableMacroImpl {
       }
     }
 
-    val loadableField = q"query.loaders.LoadableField"
-    val jValue = q"org.json4s.JsonAST.JValue"
+    val loadableField = q"_root_.query.loaders.LoadableField"
+    val jValue = q"_root_.org.json4s.JsonAST.JValue"
     // Want to end up with:
     // Either[Iterable(String, LoadableField), JValue]
     val fields = validMembers.map { case (symbol, fieldMode) =>
@@ -65,7 +70,7 @@ object LoadableMacroImpl {
     c.Expr[Loadable[A]](
       q"""
         new Loadable[$aSymbol] {
-          def load(a: $aSymbol): Either[Map[String, query.loaders.LoadableField], org.json4s.JsonAST.JValue] = Left($fieldList)
+          def load(a: $aSymbol): Either[Map[String, _root_.query.loaders.LoadableField], _root_.org.json4s.JsonAST.JValue] = Left($fieldList)
       }
       """)
   }

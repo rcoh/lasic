@@ -28,6 +28,8 @@ class LoadableClass {
   def exposedList = List(1,2,3)
 }
 
+case class LoadableCaseClass(@Expose exposeCase: String)
+
 class LoadableTest extends WordSpec with Matchers {
   import Loadable._
   "Loadable" should {
@@ -52,9 +54,15 @@ class LoadableTest extends WordSpec with Matchers {
       loader("method").loader().left.get.load should be(Right(JString("method")))
     }
 
-    "Support loading lists" in {
-
+    "Support case classes" in {
+      val instance = LoadableCaseClass("exposeCase")
+      implicit val caseClassLoader = Loadable.loadable[LoadableCaseClass]
+      val loader = instance.load().left.get
+      loader("exposeCase").fieldMode should be(Expose)
+      loader("exposeCase").loader().left.get.load should be(Right(JString("exposeCase")))
     }
+
+
   }
 
 }

@@ -5,10 +5,12 @@ import org.scalatest.{Matchers, WordSpec}
 import query.lang.QueryParser
 import query.loaders.{Expose, ExposeAlways, Loadable}
 
+
 /**
   * Created by russell on 8/17/16.
   */
 
+case class User(@Expose name: String, @ExposeAlways email: String, @Expose bio: String, @Expose friends: List[User], internalId: Int)
 trait ParentTrait {
   @Expose
   def exposedFromTrait = "exposedFromTrait"
@@ -72,6 +74,13 @@ class RendererTest extends WordSpec with Matchers {
 
       )
     }
+
+    /*"render the example from the readme" in {
+      implicit val userLoader = Loadable.loadable[User]
+      val user: User = User("Alice", "alice@hotmail.com", "My bio", List(User("bob", "bob@geocities.net",  "bob", List(), 2)), 1)
+      val query = QueryParser.parse("[name,email,friends[name]*5]").right.get
+      //println(pretty(render((Renderer.render(user, query)))))
+    }*/
 
   }
 
