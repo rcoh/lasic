@@ -23,6 +23,9 @@ class LoadableClass {
   def method = "method"
 
   def unexposed = ???
+
+  @Expose
+  def exposedList = List(1,2,3)
 }
 
 class LoadableTest extends WordSpec with Matchers {
@@ -36,19 +39,21 @@ class LoadableTest extends WordSpec with Matchers {
 
     "Provide loadable via macro for classes" in {
       implicit val loadableLoader = Loadable.loadable[LoadableClass]
-
     }
 
-    "Support loading fields an methods" in {
+    "Support loading fields and methods" in {
       implicit val loadableLoader = Loadable.loadable[LoadableClass]
       val instance = new LoadableClass()
       val loader = instance.load().left.get
-      println(loader)
       loader("always").fieldMode should be(ExposeAlways)
       loader("always").loader().left.get.load should be(Right(JString("always")))
       loader.keys should not contain("unexposed")
 
       loader("method").loader().left.get.load should be(Right(JString("method")))
+    }
+
+    "Support loading lists" in {
+
     }
   }
 

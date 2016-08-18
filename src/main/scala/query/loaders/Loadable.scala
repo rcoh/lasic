@@ -29,6 +29,10 @@ object Loadable {
     override def load(a: Double): Either[Fields, JValue] = Right(JDouble(a))
   }
 
+  implicit object ConcreteLoadableLoadable extends Loadable[ConcreteLoadable] {
+    override def load(a: ConcreteLoadable): Either[Fields, JValue] = a.load
+  }
+
   def toConcreteLoadable[A: Loadable](loadable: A): ConcreteLoadable = {
     new ConcreteLoadable {
       override def load: Either[Fields, JValue] = implicitly[Loadable[A]].load(loadable)
@@ -41,7 +45,7 @@ object Loadable {
 }
 
 trait ConcreteLoadable {
-  def load: Either[Fields, JValue]
+  def load: Either[Map[String, LoadableField], JValue]
 }
 
 case class LoadableField(fieldMode: FieldMode, loader: () => Either[ConcreteLoadable, Iterable[ConcreteLoadable]])
