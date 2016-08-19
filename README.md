@@ -1,4 +1,4 @@
-# lasic
+# lasic [![Build Status](https://travis-ci.com/rcoh/lasic.svg?token=6WTsn7UphqVzbqrZy9ud&branch=master)](https://travis-ci.com/rcoh/lasic)
 Lasic is a small Scala library that allows you to generate JSON serialization on the fly. Rather than having to write separate APIs to return different fields of the same object, `lasic` allows the UI (or anyone else) to request both the fields and pagination they want. Here's a quick example:
 
 ```scala
