@@ -7,6 +7,7 @@ def allUsers: List[User]
 ```
 Suppose users had really prolific bios and you didn't want to send them to the UI when the UI only wanted the user's name. Rather than needing to create a separate endpoint, lasic defines a simple query language to allow the UI to request exactly the fields it wants:
 ```
+// Just the name an email, no bio
 [name,email]
 ```
 
