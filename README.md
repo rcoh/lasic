@@ -37,9 +37,22 @@ Render some Json:
 ```scala
 // Get the users name, email, and the name of their first 5 friends
 val user: User = User("Alice", "alice@hotmail.com", "My bio", List(User("bob", "bob@geocities.net",  "bob", List())))
-val query = QueryParser.parse("[name,email,friends[name]*5]")
+val query = QueryParser.parse("[name,friends[name]*5]")
 Renderer.render(user, query)
-/* { ... } */
+/*
+{
+  "name":"Alice",
+  "email":"alice@hotmail.com",
+  "friends":[{
+    "name":"bob",
+    "email":"bob@geocities.net"
+  }]
+}
+*/
+
+The `email` field appears even though we didn't request it because it's set to `ExposeAlways`. Not how the renderer properly
+handles the fact that `friends` is a list and correctly extracts fields.
+
 ```
 
 ## General Usage ##

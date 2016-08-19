@@ -13,6 +13,7 @@ object LoadableMacroImpl {
     * 1. Traverse the fields of A
     * 2. Extract fields that are annotated with matching macros
     * 3. Return a `Loadable[A]` that provides a listing of those fields
+    *
     * @param c
     * @tparam A
     * @return
@@ -29,7 +30,9 @@ object LoadableMacroImpl {
     val caseClassAnnotations: Map[String, List[Annotation]] = if (aSymbol.isClass && aSymbol.asClass.isCaseClass) {
       val constructorSymbols = aSymbol.asClass.primaryConstructor.typeSignature.paramLists.head
       constructorSymbols.map(s => s.name.toString -> s.annotations).toMap
-    } else { Map() }
+    } else {
+      Map()
+    }
     val validMembers = instanceType.members.flatMap { member =>
       val annotationsFromCase = caseClassAnnotations.getOrElse(member.name.toString, List())
       val fieldModes = (member.annotations ++ annotationsFromCase).flatMap(annotationMapper(c)(_))
@@ -40,39 +43,64 @@ object LoadableMacroImpl {
       }
     }
 
-    val loadableField = q"_root_.query.loaders.LoadableField"
-    val jValue = q"_root_.org.json4s.JsonAST.JValue"
+    val LoadableField = q"_root_.query.loaders.LoadableField"
     // Want to end up with:
     // Either[Iterable(String, LoadableField), JValue]
+    var isRecursive = false
     val fields = validMembers.map { case (symbol, fieldMode) =>
-        val term = symbol.asTerm
-        if (term.isMethod && term.asMethod.paramLists.nonEmpty) {
-          throw new IllegalArgumentException("Method must not have arguments")
-        }
+      val term = symbol.asTerm
+      if (term.isMethod && term.asMethod.paramLists.nonEmpty) {
+        throw new IllegalArgumentException("Method must not have arguments")
+      }
 
-        // A bit of massaging to get a symbol that will work for fields and methods
-        val accessor: Symbol = if (symbol.isMethod) {
-          symbol.asMethod
-        } else if (symbol.isTerm) {
-          symbol.asTerm.getter
-        } else {
-          throw new RuntimeException(s"$symbol was not a supported type for loading")
-        }
+      // A bit of massaging to get a symbol that will work for fields and methods
+      val accessor: Symbol = if (symbol.isMethod) {
+        symbol.asMethod
+      } else if (symbol.isTerm) {
+        symbol.asTerm.getter
+      } else {
+        throw new RuntimeException(s"$symbol was not a supported type for loading")
+      }
 
-        if (accessor.typeSignature.resultType <:< typeOf[Iterable[Any]]) {
-          q"""${accessor.name.toString} -> $loadableField($fieldMode, () => Right(a.$accessor.map(loadable => Loadable.toConcreteLoadable(loadable))))"""
+      val fieldIsRecursive = accessor.typeSignature.resultType.typeArgs.exists(_ <:< instanceType) || accessor.typeSignature.resultType <:< instanceType
+      isRecursive = fieldIsRecursive || isRecursive
+
+
+      def loadableWrapper(field: Tree) = {
+        if (fieldIsRecursive) {
+          q"""new _root_.query.loaders.ConcreteLoadable {
+                  def load = lazyStuff.load($field)
+              }"""
         } else {
-          q"""${accessor.name.toString} -> $loadableField($fieldMode, () => Left(Loadable.toConcreteLoadable(a.$accessor)))"""
+          q"Loadable.toConcreteLoadable($field)"
         }
+      }
+      if (accessor.typeSignature.resultType <:< typeOf[Iterable[Any]]) {
+        val loadable = loadableWrapper(q"loadable")
+        q"""${accessor.name.toString} -> $LoadableField($fieldMode, () => Right(a.$accessor.map(loadable => $loadable)))"""
+      } else {
+        val loadable = loadableWrapper(q"a.$accessor")
+        q"""${accessor.name.toString} -> $LoadableField($fieldMode, () => Left(Loadable.toConcreteLoadable($loadable)))"""
+      }
     }.toList
 
     val fieldList = q"""Map($fields: _*)"""
-    c.Expr[Loadable[A]](
+    val finalTree =
       q"""
         new Loadable[$aSymbol] {
           def load(a: $aSymbol): Either[Map[String, _root_.query.loaders.LoadableField], _root_.org.json4s.JsonAST.JValue] = Left($fieldList)
-      }
-      """)
+        }
+      """
+    if (!isRecursive) {
+      c.Expr[Loadable[A]](finalTree)
+    } else {
+      c.Expr[Loadable[A]](
+        q"""
+         new _root_.query.loaders.LazyHelper[Loadable, $aSymbol] {
+           override lazy val lazyStuff: Loadable[${atag.tpe}] = $finalTree
+         }.lazyStuff"""
+      )
+    }
   }
 
   def annotationMapper(c: Context)(annotation: c.universe.Annotation): Option[FieldMode] = {

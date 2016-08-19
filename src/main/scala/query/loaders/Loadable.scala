@@ -42,6 +42,16 @@ object Loadable {
   implicit class LoadableOps[A: Loadable](a: A) {
     def load() = implicitly[Loadable[A]].load(a)
   }
+
+  def lazyLoadable[A](r: => Loadable[A]): Loadable[A] = new Loadable[A] {
+    override def load(a: A): Either[Fields, JValue] = r.load(a)
+  }
+}
+
+import scala.language.higherKinds
+
+trait LazyHelper[M[_], T] {
+  def lazyStuff: M[T]
 }
 
 trait ConcreteLoadable {
