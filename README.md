@@ -49,11 +49,9 @@ Renderer.render(user, query)
   }]
 }
 */
-
-The `email` field appears even though we didn't request it because it's set to `ExposeAlways`. Not how the renderer properly
-handles the fact that `friends` is a list and correctly extracts fields.
-
 ```
+The `email` field appears even though we didn't request it because it's set to `ExposeAlways`. Note how the renderer properly handles the fact that `friends` is a list and correctly extracts fields.
+
 
 ## General Usage ##
 In general, you'll want to wire up the rendering layer wherever in your webserver you are converting things to JSON to avoid code duplication. The only requirement is that the argument to 
