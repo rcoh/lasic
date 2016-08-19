@@ -1,6 +1,7 @@
 package query.render
 
 import org.json4s.JsonAST._
+import org.json4s.native.JsonMethods.{pretty, render}
 import org.scalatest.{Matchers, WordSpec}
 import query.lang.QueryParser
 import query.loaders.{Expose, ExposeAlways, Loadable}
@@ -71,15 +72,24 @@ class RendererTest extends WordSpec with Matchers {
           "exposedPrimitiveList" -> JArray(List(JInt(2), JInt(3),JInt(4))),
           "exposedAlwaysFromTrait" -> JString("exposedAlwaysFromTrait"),
           "exposedAlways" -> JString("exposedAlways"))
-
       )
+
+      pretty(render(renderQuery("[exposedCompoundList[expose]]"))) should be(
+        pretty(render(JObject(
+          "exposedCompoundList" -> JArray(List(
+            JObject("expose" -> JString("1"), "exposeAlways" -> JString("2")),
+            JObject("expose" -> JString("3"), "exposeAlways" -> JString("4")),
+            JObject("expose" -> JString("5"), "exposeAlways" -> JString("6"))
+            )),
+          "exposedAlwaysFromTrait" -> JString("exposedAlwaysFromTrait"),
+          "exposedAlways" -> JString("exposedAlways")
+      ))))
     }
 
     "render the example from the readme" in {
       implicit val userLoader = Loadable.loadable[User]
       val user: User = User("Alice", "alice@hotmail.com", "My bio", List(User("bob", "bob@geocities.net",  "bob", List(), 2)), 1)
       val query = QueryParser.parse("[name,email,friends[name]*5]").right.get
-      import org.json4s.native.JsonMethods.{pretty, render}
       pretty(render(Renderer.render(user, query))) should be(
         """{
            |  "name":"Alice",
