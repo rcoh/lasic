@@ -1,5 +1,5 @@
 # lasic [![Build Status](https://travis-ci.org/rcoh/lasic.svg?branch=master)](https://travis-ci.org/rcoh/lasic)
-Lasic is a small Scala library that allows you to generate JSON serialization on the fly. Rather than having to write separate APIs to return different fields of the same object, `lasic` allows the UI (or anyone else) to request both the fields and pagination they want. Here's a quick example:
+Lasic is a small Scala library that allows you to generate JSON serialization on the fly. Rather than having to write separate APIs to return different fields of the same object, `lasic` allows the UI (or anyone else) to request both the fields and pagination they want. It's also completely type safe, verified at compile time, and doesn't use reflection. Here's a quick example:
 
 ```scala
 case class User(name: String, bio: String, email: String)
@@ -58,3 +58,5 @@ The `email` field appears even though we didn't request it because it's set to `
 In general, you'll want to wire up the rendering layer wherever in your webserver you are converting things to JSON to avoid code duplication. The only requirement is that the argument to 
 the render method must be a member of the `Loadable` typeclass (`def foo[A: Loadable](a: A)`)
 
+## Under the Hood ##
+Lasic uses macros to build accesors for fields marked with `@Expose` and `@ExposeAlways`. The macro brings classes into the type class `Loadable[T]`. The macro also verifies that all exposed members of a given class are also `Loadable[T]`. Given a `Loadable[T]` the renderer parses the query string and builds the JSON object.
