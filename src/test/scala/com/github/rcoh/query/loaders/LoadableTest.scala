@@ -29,6 +29,8 @@ class LoadableClass {
 }
 
 case class LoadableCaseClass(@Expose exposeCase: String)
+case class RecursiveList(@Expose y: Int, @Expose x: List[RecursiveList])
+case class Recursive(@Expose r: Recursive)
 
 class LoadableTest extends WordSpec with Matchers {
   import Loadable._
@@ -61,6 +63,20 @@ class LoadableTest extends WordSpec with Matchers {
       loader("exposeCase").fieldMode should be(Expose)
       loader("exposeCase").loader().left.get.load should be(Right(JString("exposeCase")))
     }
+
+    "Support recursive types" in {
+      implicit val recursiveLoader = Loadable.loadable[RecursiveList]
+      val r = RecursiveList(5, List(RecursiveList(10, List())))
+      val loader = r.load().left.get
+      loader("y").loader().left.get.load should be(Right(JInt(5)))
+      val loaderList = loader("x").loader().right.get.toList
+      loaderList should have length(1)
+      loaderList.head.load.left.get("y").loader().left.get.load should be(Right(JInt(10)))
+
+      implicit val recursiveLoader2 = Loadable.loadable[Recursive]
+    }
+
+
 
 
   }
