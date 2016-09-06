@@ -1,4 +1,4 @@
-package query.loaders
+package com.github.rcoh.query.loaders
 
 import org.json4s.JsonAST.{JDouble, JInt, JString}
 import org.scalatest.{Matchers, WordSpec}

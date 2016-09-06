@@ -1,4 +1,4 @@
-package query.loaders
+package com.github.rcoh.query.loaders
 
 import scala.annotation.StaticAnnotation
 

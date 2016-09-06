@@ -1,4 +1,4 @@
-package query.loaders
+package com.github.rcoh.query.loaders
 
 import scala.reflect.macros.blackbox.Context
 import language.experimental.macros
@@ -20,8 +20,8 @@ object LoadableMacroImpl {
   def loadableImpl[A](c: Context)(implicit atag: c.WeakTypeTag[A]): c.Expr[Loadable[A]] = {
     import c.universe._
     implicit val liftableFieldMode = Liftable[FieldMode] {
-      case Expose => q"_root_.query.loaders.Expose"
-      case ExposeAlways => q"_root_.query.loaders.ExposeAlways"
+      case Expose => q"_root_.com.github.rcoh.query.loaders.Expose"
+      case ExposeAlways => q"_root_.com.github.rcoh.query.loaders.ExposeAlways"
     }
 
     val instanceType = weakTypeOf[A]
@@ -40,7 +40,7 @@ object LoadableMacroImpl {
       }
     }
 
-    val loadableField = q"_root_.query.loaders.LoadableField"
+    val loadableField = q"_root_.com.github.rcoh.query.loaders.LoadableField"
     val jValue = q"_root_.org.json4s.JsonAST.JValue"
     // Want to end up with:
     // Either[Iterable(String, LoadableField), JValue]
@@ -70,8 +70,8 @@ object LoadableMacroImpl {
     c.Expr[Loadable[A]](
       q"""
         new Loadable[$aSymbol] {
-          def load(a: $aSymbol): Either[Map[String, _root_.query.loaders.LoadableField], _root_.org.json4s.JsonAST.JValue] = Left($fieldList)
-      }
+          def load(a: $aSymbol): Either[Map[String, _root_.com.github.rcoh.query.loaders.LoadableField], _root_.org.json4s.JsonAST.JValue] = Left($fieldList)
+        }
       """)
   }
 

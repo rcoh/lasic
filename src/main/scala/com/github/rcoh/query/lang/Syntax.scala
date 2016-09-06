@@ -1,4 +1,4 @@
-package query.lang
+package com.github.rcoh.query.lang
 
 object Query {
   val DefaultPaging = Paging(20, 0)

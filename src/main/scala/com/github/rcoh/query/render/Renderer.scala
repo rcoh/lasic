@@ -1,8 +1,8 @@
-package query.render
+package com.github.rcoh.query.render
 
 import org.json4s.JsonAST.{JArray, JObject, JValue}
-import query.lang.Query
-import query.loaders.{ConcreteLoadable, ExposeAlways, Loadable, LoadableField}
+import com.github.rcoh.query.lang.Query
+import com.github.rcoh.query.loaders.{ConcreteLoadable, ExposeAlways, Loadable, LoadableField}
 
 /**
   * Created by russell on 8/7/16.

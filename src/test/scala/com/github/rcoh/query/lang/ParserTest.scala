@@ -1,4 +1,4 @@
-package query.lang
+package com.github.rcoh.query.lang
 
 import org.scalatest.{Matchers, WordSpec}
 

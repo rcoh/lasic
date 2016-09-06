@@ -1,9 +1,9 @@
-package query.render
+package com.github.rcoh.query.render
 
 import org.json4s.JsonAST._
 import org.scalatest.{Matchers, WordSpec}
-import query.lang.QueryParser
-import query.loaders.{Expose, ExposeAlways, Loadable}
+import com.github.rcoh.query.lang.QueryParser
+import com.github.rcoh.query.loaders.{Expose, ExposeAlways, Loadable}
 
 
 /**

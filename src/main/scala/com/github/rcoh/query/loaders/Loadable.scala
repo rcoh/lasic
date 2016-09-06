@@ -1,7 +1,7 @@
-package query.loaders
+package com.github.rcoh.query.loaders
 
 import org.json4s.JsonAST.{JDouble, JInt, JString, JValue}
-import query.loaders.Loadable.Fields
+import com.github.rcoh.query.loaders.Loadable.Fields
 import scala.language.experimental.macros
 
 /**
