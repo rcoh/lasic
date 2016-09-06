@@ -20,6 +20,21 @@ It also includes control for pagination:
 With these queries, lasic will generate the specific JSON requested by the UI with _almost_ no boilerplate.
 
 ## Quick Start ##
+Add `lasic` as a dependency:
+* For SBT:
+```
+libraryDependencies += "com.github.rcoh" % "lasic_2.11" % "0.1.0"
+```
+* For Maven:
+```
+<dependency>
+  <groupId>com.github.rcoh</groupId>
+  <artifactId>lasic_2.11</artifactId>
+  <version>0.1.0</version>
+</dependency>
+```
+
+
 Take your class:
 ```scala
 case class User(name: String, email: String, bio: String, friends: List[Friend], internalId: Int)
