@@ -68,6 +68,22 @@ Renderer.render(user, query)
 ```
 The `email` field appears even though we didn't request it because it's set to `ExposeAlways`. Note how the renderer properly handles the fact that `friends` is a list and correctly extracts fields.
 
+### But wait: there's more!
+* Lasic also works for traits, normal classes, and objects. It even works if the annotated fields come from different places:
+```
+trait Entity {
+   @ExposeAlways
+   def id: String
+}
+
+trait UserEntity extends Entity {
+   @Expose
+   def email: String
+   
+   @Expose
+   def age: Int
+}
+```
 
 ## General Usage ##
 In general, you'll want to wire up the rendering layer wherever in your webserver you are converting things to JSON to avoid code duplication. The only requirement is that the argument to 
