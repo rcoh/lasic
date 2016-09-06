@@ -23,14 +23,14 @@ With these queries, lasic will generate the specific JSON requested by the UI wi
 Add `lasic` as a dependency:
 * For SBT:
 ```
-libraryDependencies += "com.github.rcoh" % "lasic_2.11" % "0.1.0"
+libraryDependencies += "com.github.rcoh" % "lasic_2.11" % "0.2.0"
 ```
 * For Maven:
 ```
 <dependency>
   <groupId>com.github.rcoh</groupId>
   <artifactId>lasic_2.11</artifactId>
-  <version>0.1.0</version>
+  <version>0.2.0</version>
 </dependency>
 ```
 
