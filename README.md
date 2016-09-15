@@ -41,6 +41,7 @@ case class User(name: String, email: String, bio: String, friends: List[Friend],
 ```
 Annotate the fields you want to expose to the UI:
 ```scala
+import com.github.rcoh.query.loaders.{Expose, ExposeAlways, Loadable}
 case class User(@Expose name: String, @ExposeAlways email: String, @Expose bio: String, @Expose friends: List[User], internalId: Int)
 ```
 
@@ -51,10 +52,15 @@ implicit val userLoadable = Loadable.byAnnotations[User]
 
 Render some Json:
 ```scala
+import com.github.rcoh.query.lang.QueryParser
+import com.github.rcoh.query.render.Renderer
 // Get the users name, email, and the name of their first 5 friends
-val user: User = User("Alice", "alice@hotmail.com", "My bio", List(User("bob", "bob@geocities.net",  "bob", List())))
-val query = QueryParser.parse("[name,friends[name]*5]")
-Renderer.render(user, query)
+val user: User = User("Alice", "alice@hotmail.com", "My bio", List(User("bob", "bob@geocities.net",  "bob", List(), internalId = 0)), internalId = 1)
+// In reality, you'd want to handle the possibility of a ParseError
+val query = QueryParser.parse("[name,friends[name]*5]").right.get
+
+import org.json4s.native.JsonMethods._
+println(pretty(render(Renderer.render(user, query))))
 /*
 {
   "name":"Alice",
