@@ -1,6 +1,7 @@
 package com.github.rcoh.query.loaders
 
-import org.json4s.JsonAST.{JDouble, JInt, JString}
+import org.json4s.JValue
+import org.json4s.JsonAST.{JDouble, JInt, JObject, JString}
 import org.scalatest.{Matchers, WordSpec}
 
 /**
@@ -42,11 +43,11 @@ class LoadableTest extends WordSpec with Matchers {
     }
 
     "Provide loadable via macro for classes" in {
-      implicit val loadableLoader = Loadable.loadable[LoadableClass]
+      implicit val loadableLoader = Loadable.byAnnotations[LoadableClass]
     }
 
     "Support loading fields and methods" in {
-      implicit val loadableLoader = Loadable.loadable[LoadableClass]
+      implicit val loadableLoader = Loadable.byAnnotations[LoadableClass]
       val instance = new LoadableClass()
       val loader = instance.load().left.get
       loader("always").fieldMode should be(ExposeAlways)
@@ -58,14 +59,14 @@ class LoadableTest extends WordSpec with Matchers {
 
     "Support case classes" in {
       val instance = LoadableCaseClass("exposeCase")
-      implicit val caseClassLoader = Loadable.loadable[LoadableCaseClass]
+      implicit val caseClassLoader = Loadable.byAnnotations[LoadableCaseClass]
       val loader = instance.load().left.get
       loader("exposeCase").fieldMode should be(Expose)
       loader("exposeCase").loader().left.get.load should be(Right(JString("exposeCase")))
     }
 
     "Support recursive types" in {
-      implicit val recursiveLoader = Loadable.loadable[RecursiveList]
+      implicit val recursiveLoader = Loadable.byAnnotations[RecursiveList]
       val r = RecursiveList(5, List(RecursiveList(10, List())))
       val loader = r.load().left.get
       loader("y").loader().left.get.load should be(Right(JInt(5)))
@@ -73,7 +74,30 @@ class LoadableTest extends WordSpec with Matchers {
       loaderList should have length(1)
       loaderList.head.load.left.get("y").loader().left.get.load should be(Right(JInt(10)))
 
-      implicit val recursiveLoader2 = Loadable.loadable[Recursive]
+      implicit val recursiveLoader2 = Loadable.byAnnotations[Recursive]
+    }
+
+    "Support allFieldsAlways" in {
+      case class Record(f1: Int, f2: String, f3: List[String])
+      implicit val recordLoader = Loadable.allFieldsAlways[Record]
+      val r = Record(1, "2", List("1", "2", "3"))
+      val loader = r.load().left.get
+      loader.keySet should be(Set("f1", "f2", "f3"))
+      loader("f1").fieldMode should be(ExposeAlways)
+    }
+
+    "Support allFieldsByRequest" in {
+      case class Record(f1: Int, f2: String, f3: List[String])
+      implicit val recordLoader = Loadable.allFieldsByRequest[Record]
+      val r = Record(1, "2", List("1", "2", "3"))
+      val loader = r.load().left.get
+      loader.keySet should be(Set("f1", "f2", "f3"))
+      loader("f1").fieldMode should be(Expose)
+    }
+
+    "JSON should be loadable" in {
+      val json: JValue = JObject("f1" -> JString("f1"))
+      json.load().left.get("f1").loader().left.get.load should be(Right(JString("f1")))
     }
 
 

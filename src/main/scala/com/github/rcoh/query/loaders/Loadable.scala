@@ -1,7 +1,8 @@
 package com.github.rcoh.query.loaders
 
-import org.json4s.JsonAST.{JDouble, JInt, JString, JValue}
+import org.json4s.JsonAST._
 import com.github.rcoh.query.loaders.Loadable.Fields
+
 import scala.language.experimental.macros
 
 /**
@@ -15,7 +16,40 @@ trait Loadable[A] {
 object Loadable {
   type Fields = Map[String, LoadableField]
 
-  def loadable[A]: Loadable[A] = macro LoadableMacroImpl.loadableImpl[A]
+  def byAnnotations[A]: Loadable[A] = macro LoadableMacroImpl.loadableByAnnotations[A]
+
+  def allFieldsAlways[A]: Loadable[A] = macro LoadableMacroImpl.allFieldsAlways[A]
+
+  def allFieldsByRequest[A]: Loadable[A] = macro LoadableMacroImpl.allFieldsByRequest[A]
+
+  def viaLoader[A](loader: A => Either[Fields, JValue]): Loadable[A] = new Loadable[A] {
+    override def load(a: A): Either[Fields, JValue] = loader(a)
+  }
+
+  /**
+    * If it's a JObject, make the fields loadable. If it's anything else, translate it literally
+    */
+  implicit object JValueLoadable extends Loadable[JValue] {
+    override def load(a: JValue): Either[Fields, JValue] = {
+      a match {
+        case o: JObject =>
+          val fields = o.obj.map { case (name, value) =>
+            val loadable = value match {
+              case arr: JArray => Right(arr.arr.map {jv => new ConcreteLoadable {
+                override def load: Either[Map[String, LoadableField], JValue] = JValueLoadable.load(jv)
+              }})
+              case jv: JValue => Left(new ConcreteLoadable {
+                override def load: Either[Map[String, LoadableField], JValue] = JValueLoadable.load(jv)
+              })
+            }
+            name -> LoadableField(ExposeAlways, () => loadable)
+
+          }.toMap
+          Left(fields)
+        case j: JValue => Right(j)
+      }
+    }
+  }
 
   implicit object StringLoadable extends Loadable[String] {
     override def load(a: String): Either[Fields, JValue] = Right(JString(a))

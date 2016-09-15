@@ -46,7 +46,7 @@ case class User(@Expose name: String, @ExposeAlways email: String, @Expose bio: 
 
 Generate `Loadable[User]`:
 ```scala
-implicit val userLoadable = Loadable.loadable[User]
+implicit val userLoadable = Loadable.byAnnotations[User]
 ```
 
 Render some Json:
@@ -69,6 +69,14 @@ Renderer.render(user, query)
 The `email` field appears even though we didn't request it because it's set to `ExposeAlways`. Note how the renderer properly handles the fact that `friends` is a list and correctly extracts fields.
 
 ### But wait: there's more!
+* For cases where you want all the fields:
+```
+// As if you put `@ExposeAlways` on each field (not method!!)
+implicit val allFieldsLoader = Loadable.allFieldsAlways[User]
+
+// As if you put `@Expose` on each field
+implicit val byRequest = Loadable.allFieldsByRequest[User]
+```
 * Lasic also works for traits, normal classes, and objects. It even works if the annotated fields come from different places:
 ```
 trait Entity {

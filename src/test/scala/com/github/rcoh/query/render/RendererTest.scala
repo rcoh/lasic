@@ -40,8 +40,8 @@ case class NestedCaseClass(@Expose expose: String, @ExposeAlways exposeAlways: S
 
 
 class RendererTest extends WordSpec with Matchers {
-  implicit val nestedRenderer = Loadable.loadable[NestedCaseClass]
-  implicit val renderer = Loadable.loadable[ObjectToRender]
+  implicit val nestedRenderer = Loadable.byAnnotations[NestedCaseClass]
+  implicit val renderer = Loadable.byAnnotations[ObjectToRender]
   val obj = new ObjectToRender
 
   def renderQuery(queryString: String): JValue = {
@@ -87,7 +87,7 @@ class RendererTest extends WordSpec with Matchers {
     }
 
     "render the example from the readme" in {
-      implicit val userLoader = Loadable.loadable[User]
+      implicit val userLoader = Loadable.byAnnotations[User]
       val user: User = User("Alice", "alice@hotmail.com", "My bio", List(User("bob", "bob@geocities.net",  "bob", List(), 2)), 1)
       val query = QueryParser.parse("[name,email,friends[name]*5]").right.get
       pretty(render(Renderer.render(user, query))) should be(

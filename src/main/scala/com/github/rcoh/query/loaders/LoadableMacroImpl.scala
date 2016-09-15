@@ -18,7 +18,43 @@ object LoadableMacroImpl {
     * @tparam A
     * @return
     */
-  def loadableImpl[A](c: Context)(implicit atag: c.WeakTypeTag[A]): c.Expr[Loadable[A]] = {
+  def loadableByAnnotations[A](c: Context)(implicit atag: c.WeakTypeTag[A]): c.Expr[Loadable[A]] = {
+    import c.universe._
+    val aSymbol = atag.tpe.typeSymbol
+    val caseClassAnnotations: Map[String, List[Annotation]] = if (aSymbol.isClass && aSymbol.asClass.isCaseClass) {
+      val constructorSymbols = aSymbol.asClass.primaryConstructor.typeSignature.paramLists.head
+      constructorSymbols.map(s => s.name.toString -> s.annotations).toMap
+    } else {
+      Map()
+    }
+    def memberValid(member: Symbol) = {
+      val annotations = member.annotations ++ caseClassAnnotations.getOrElse(member.name.toString, List())
+      val fieldModes = annotations.flatMap(annotationMapper(c)(_))
+      fieldModes match {
+        case mode :: Nil => Some(mode)
+        case Nil => None
+        case _ => throw new IllegalArgumentException(s"Expected only 1 matching annotation but instead found $fieldModes")
+      }
+    }
+    val memberCollector = _root_.scala.Function.unlift(memberValid)
+    loadableImpl(c)(memberCollector)(atag)
+  }
+
+  def allFieldsAlways[A](c: Context)(implicit atag: c.WeakTypeTag[A]): c.Expr[Loadable[A]] = {
+    val memberCollector: PartialFunction[c.Symbol, FieldMode] = {
+      case m if !m.isMethod => ExposeAlways
+    }
+    loadableImpl(c)(memberCollector)(atag)
+  }
+
+  def allFieldsByRequest[A](c: Context)(implicit atag: c.WeakTypeTag[A]): c.Expr[Loadable[A]] = {
+    val memberCollector: PartialFunction[c.Symbol, FieldMode] = {
+      case m if !m.isMethod => Expose
+    }
+    loadableImpl(c)(memberCollector)(atag)
+  }
+
+  def loadableImpl[A](c: Context)(memberCollector: PartialFunction[c.Symbol, FieldMode])(implicit atag: c.WeakTypeTag[A]): c.Expr[Loadable[A]] = {
     import c.universe._
     implicit val liftableFieldMode = Liftable[FieldMode] {
       case Expose => q"_root_.com.github.rcoh.query.loaders.Expose"
@@ -27,25 +63,13 @@ object LoadableMacroImpl {
 
     val instanceType = weakTypeOf[A]
     val aSymbol = atag.tpe.typeSymbol
-    val caseClassAnnotations: Map[String, List[Annotation]] = if (aSymbol.isClass && aSymbol.asClass.isCaseClass) {
-      val constructorSymbols = aSymbol.asClass.primaryConstructor.typeSignature.paramLists.head
-      constructorSymbols.map(s => s.name.toString -> s.annotations).toMap
-    } else {
-      Map()
-    }
-    val validMembers = instanceType.members.flatMap { member =>
-      val annotationsFromCase = caseClassAnnotations.getOrElse(member.name.toString, List())
-      val fieldModes = (member.annotations ++ annotationsFromCase).flatMap(annotationMapper(c)(_))
-      fieldModes match {
-        case mode :: Nil => Some(member -> mode)
-        case Nil => None
-        case _ => throw new IllegalArgumentException(s"Expected only 1 matching annotation but instead found $fieldModes")
-      }
-    }
 
     val loadableField = q"_root_.com.github.rcoh.query.loaders.LoadableField"
     // Want to end up with:
     // Either[Iterable(String, LoadableField), JValue]
+    val validMembers = instanceType.members.collect {
+      case m if memberCollector.isDefinedAt(m) => m -> memberCollector(m)
+    }
     var isRecursive = false
     val fields = validMembers.map { case (symbol, fieldMode) =>
       val term = symbol.asTerm
